@@ -38,6 +38,27 @@ class Blockchain{
         newBlock.hash = newBlock.calculateHash(); // Calculate the hash of the new block
         this.chain.push(newBlock); // Add the new block onto the chain
     }
+
+    isChainValid(){
+        // Loop through the chain and check if the hash of each block is valid
+        for(let i = 1; i < this.chain.length; i++){
+            const currentBlock = this.chain[i]; // Current block
+            const previousBlock = this.chain[i - 1]; // Previous block
+
+            // Check if the hash of the current block is valid
+            if(currentBlock.hash !== currentBlock.calculateHash()){
+                return false;
+            }
+
+            // Check if the previous hash of the current block is equal to the hash of the previous block
+            if(currentBlock.previousHash !== previousBlock.hash){
+                return false;
+            }
+        }
+
+        // If the chain is valid
+        return true;
+    }
 }
 
 // Testing the blockchain
@@ -45,4 +66,12 @@ let ArtemisCoin = new Blockchain();
 ArtemisCoin.addBlock(new Block(1, "01/02/2023", {amount: 4}));
 ArtemisCoin.addBlock(new Block(2, "05/02/2023", {amount: 10}));
 
-console.log(JSON.stringify(ArtemisCoin, null, 4)); // Print the blockchain to the console
+console.log('Is blockchain valid? ' + ArtemisCoin.isChainValid()); // Check if the blockchain is valid
+
+ArtemisCoin.chain[1].data = {amount: 100};
+ArtemisCoin.chain[1].hash = ArtemisCoin.chain[1].calculateHash();
+
+console.log('Is blockchain valid? ' + ArtemisCoin.isChainValid()); // Tamper with the data to check if the blockchain is still valid    
+
+//console.log(JSON.stringify(ArtemisCoin, null, 4)); // Print the blockchain to the console
+
