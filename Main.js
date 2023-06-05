@@ -12,17 +12,30 @@ class Block{
         this.data = data;
         this.previousHash = previousHash;
         this.hash = this.calculateHash(); // Hash of the block
+        this.nonce = 0; // Random number that has nothing to do with the block but can be changed to affect the hash of the block
     }
 
     calculateHash(){
         // Hash function to calculate the hash of the block
-        return SHA256(this.index + this.previousHash + this.timestamp + JSON.stringify(this.data)).toString();
+        return SHA256(this.index + this.previousHash + this.timestamp + JSON.stringify(this.data) + this.nonce).toString();
+    }
+    
+    mineBlock(difficulty){
+        // Keep changing the nonce until the hash of the block starts with enough 0s
+        while(this.hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")){
+            this.nonce++; // Increment the nonce
+            this.hash = this.calculateHash(); // Calculate the hash of the block
+        }
+
+        console.log("Block mined: " + this.hash);
     }
 }
+
 
 class Blockchain{
     constructor(){
         this.chain = [this.createGenesisBlock()] // Array that will hold all the blocks in our blockchain
+        this.difficulty = 4; // Difficulty of the proof of work algorithm
     }
 
     createGenesisBlock(){
@@ -35,7 +48,7 @@ class Blockchain{
 
     addBlock(newBlock){
         newBlock.previousHash = this.getLatestBlock().hash; // Set the previous hash to the hash of the latest block
-        newBlock.hash = newBlock.calculateHash(); // Calculate the hash of the new block
+        newBlock.mineBlock(this.difficulty); // Mine the block with a difficulty of 2
         this.chain.push(newBlock); // Add the new block onto the chain
     }
 
@@ -63,15 +76,19 @@ class Blockchain{
 
 // Testing the blockchain
 let ArtemisCoin = new Blockchain();
+
+console.log('Mining block 1...');
 ArtemisCoin.addBlock(new Block(1, "01/02/2023", {amount: 4}));
+
+console.log('Mining block 2...');
 ArtemisCoin.addBlock(new Block(2, "05/02/2023", {amount: 10}));
 
-console.log('Is blockchain valid? ' + ArtemisCoin.isChainValid()); // Check if the blockchain is valid
+// console.log('Is blockchain valid? ' + ArtemisCoin.isChainValid()); // Check if the blockchain is valid
 
-ArtemisCoin.chain[1].data = {amount: 100};
-ArtemisCoin.chain[1].hash = ArtemisCoin.chain[1].calculateHash();
+// ArtemisCoin.chain[1].data = {amount: 100};
+// ArtemisCoin.chain[1].hash = ArtemisCoin.chain[1].calculateHash();
 
-console.log('Is blockchain valid? ' + ArtemisCoin.isChainValid()); // Tamper with the data to check if the blockchain is still valid    
+// console.log('Is blockchain valid? ' + ArtemisCoin.isChainValid()); // Tamper with the data to check if the blockchain is still valid    
 
 //console.log(JSON.stringify(ArtemisCoin, null, 4)); // Print the blockchain to the console
 
