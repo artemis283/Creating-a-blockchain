@@ -5,11 +5,18 @@
 // PreviousHash = string that contains the hash of the block before this one ensuring the integrity of the blockchain
 const SHA256 = require('crypto-js/sha256');
 
+class Transaction{
+    constructor(fromAddress, toAddress, amount){
+        this.fromAddress = fromAddress; // Public key
+        this.toAddress = toAddress; // Public key
+        this.amount = amount; // Amount of coins sent
+    }
+}
+
 class Block{
-    constructor(index, timestamp, data, previousHash = ''){
-        this.index = index;
+    constructor(timestamp, transactions, previousHash = ''){
         this.timestamp = timestamp;
-        this.data = data;
+        this.transactions = transactions;
         this.previousHash = previousHash;
         this.hash = this.calculateHash(); // Hash of the block
         this.nonce = 0; // Random number that has nothing to do with the block but can be changed to affect the hash of the block
@@ -35,7 +42,9 @@ class Block{
 class Blockchain{
     constructor(){
         this.chain = [this.createGenesisBlock()] // Array that will hold all the blocks in our blockchain
-        this.difficulty = 4; // Difficulty of the proof of work algorithm
+        this.difficulty = 2; // Difficulty of the proof of work algorithm
+        this.pendingTransactions = []; // Transactions that haven't been put into a block yet
+        this.miningReward = 100; // Reward for mining a block
     }
 
     createGenesisBlock(){
@@ -46,10 +55,38 @@ class Blockchain{
         return this.chain[this.chain.length - 1]; // Return the last block in the chain
     }
 
-    addBlock(newBlock){
-        newBlock.previousHash = this.getLatestBlock().hash; // Set the previous hash to the hash of the latest block
-        newBlock.mineBlock(this.difficulty); // Mine the block with a difficulty of 2
-        this.chain.push(newBlock); // Add the new block onto the chain
+    minePendingTransactions(miningRewardAddress){
+        let block = new Block(Date.now(), this.pendingTransactions); // Create a new block with the pending transactions
+        block.mineBlock(this.difficulty); // Mine the block with the difficulty
+
+        console.log('Block successfully mined!');
+        this.chain.push(block); // Add the block to the chain
+
+        this.pendingTransactions = [
+            new Transaction(null, miningRewardAddress, this.miningReward)
+         ]; // Reset the pending transactions and add a new transaction to send the mining reward
+    }   
+    
+    createTransaction(transaction){
+        this.pendingTransactions.push(transaction); // Add the transaction to the pending transactions
+    }
+
+    getBalanceOfAddress(address){
+        let balance = 0; // Start the balance at 0
+
+        for(const block of this.chain){ // Loop through the blocks in the chain
+            for(const trans of block.transactions){ // Loop through the transactions in the block
+                if(trans.fromAddress === address){ // If the address is the sender
+                    balance -= trans.amount; // Subtract the amount from the balance
+                }
+
+                if(trans.toAddress === address){ // If the address is the receiver
+                    balance += trans.amount; // Add the amount to the balance
+                }
+            }
+        }
+
+        return balance; // Return the balance
     }
 
     isChainValid(){
@@ -76,12 +113,24 @@ class Blockchain{
 
 // Testing the blockchain
 let ArtemisCoin = new Blockchain();
+ArtemisCoin.createTransaction(new Transaction('address1', 'address2', 100));
+ArtemisCoin.createTransaction(new Transaction('address2', 'address1', 50));
 
-console.log('Mining block 1...');
-ArtemisCoin.addBlock(new Block(1, "01/02/2023", {amount: 4}));
+console.log('\n Starting the miner...');
+ArtemisCoin.minePendingTransactions('artemis-address');
 
-console.log('Mining block 2...');
-ArtemisCoin.addBlock(new Block(2, "05/02/2023", {amount: 10}));
+console.log('\nBalance of Artemis is', ArtemisCoin.getBalanceOfAddress('artemis-address'));
+
+console.log('\n Starting the miner again...');
+ArtemisCoin.minePendingTransactions('artemis-address');
+
+console.log('\nBalance of Artemis is', ArtemisCoin.getBalanceOfAddress('artemis-address'));
+
+// console.log('Mining block 1...');
+// ArtemisCoin.addBlock(new Block(1, "01/02/2023", {amount: 4}));
+
+// console.log('Mining block 2...');
+// ArtemisCoin.addBlock(new Block(2, "05/02/2023", {amount: 10}));
 
 // console.log('Is blockchain valid? ' + ArtemisCoin.isChainValid()); // Check if the blockchain is valid
 
